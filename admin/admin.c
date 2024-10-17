@@ -20,6 +20,7 @@
 #define EMP_DIR  "./data/users/employee/"
 #define MGR_DIR  "./data/users/manager/"
 
+
 int getAdmin(char* username, AdminDTO* admin) {
     char path[256];
     struct flock lock;
@@ -100,37 +101,67 @@ int add_new_employee(EmployeeDTO *employee) {
     char path[256];
     char mgrpath[256];
     struct flock lock;
-    snprintf(path, sizeof(path), "%s%s", EMP_DIR, employee->username);
-    snprintf(mgrpath, sizeof(path), "%s%s", MGR_DIR, employee->username);
+    struct stat st; //for file size 
+    ssize_t file_size;
+    long empCount;
 
-    int fd1 = open(path, O_RDONLY );
-    if (fd1 > 0) {
-        perror("employee with username already exists");
-        close(fd1);
-        return -2;
-    }
+    memset(&lock, 0, sizeof(lock));
+    memset(&st, 0, sizeof(st));
 
-    int fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0644);
-    if (fd == -1) {
-        perror("employee with username already exists");
-        return -2;
+    snprintf(path, sizeof(path), "%s%s", EMP_DIR, "employee");
+    // snprintf(mgrpath, sizeof(path), "%s%s", MGR_DIR, employee->username);
+    // int fd1 = open(path, O_RDONLY );
+    // if (fd1 > 0) {
+    //     perror("employee with username already exists");
+    //     close(fd1);
+    //     return -2;
+    // }
+
+    int fd = open(path, O_WRONLY);
+    if (fd == -1) 
+    {
+        if (errno == ENOENT) {  // File does not exist
+           
+            
+            // Open file in create mode with read and write permissions
+            fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0644);
+            if (fd == -1) {  // If open with O_CREAT also fails
+                perror("Error creating file");
+                return -1;
+            }
+        } 
+        else {
+            perror("Unable to open employee file");
+        return -1;
+        }
     }
 
     // Lock the file for writing
-    if (mwlock_w(fd, &lock) == -1) {
+    if (awlock_w(fd, &lock, SEEK_END, 0, sizeof(EmployeeDTO)) == -1) {
         perror("Failed to lock file");
         close(fd);
         return -1;
     }
+    fstat(fd,&st);
+    
+    file_size = st.st_size;
+    printf("filesidze = %ld", file_size);
 
+    // Calculate the number of structs in the file
+    empCount = file_size / sizeof(EmployeeDTO);
+    printf("empcount = %ld", empCount);
+    employee->empId = EMPID_START + empCount;
+    printf("employeeId = %ld",employee->empId);
+    lseek(fd, 0, SEEK_END);
     if (write(fd, employee, sizeof(EmployeeDTO)) == -1) {
         perror("Failed to add employee.");
         unlock(fd, &lock);
         close(fd);
         return -1;
     }
-
-    if(add_user(employee->username, employee->username)==-1){
+    char empid_char[MAX_USERNAME_LEN];
+    snprintf(empid_char, MAX_USERNAME_LEN, "%d", employee->empId);
+    if(add_user(empid_char, empid_char)==-1){
         unlock(fd, &lock);
         close(fd);
         if(unlink(path)==0) {
@@ -196,26 +227,30 @@ int modify_customer_details(const char *username, CustomerDTO *newCust) {
 }
 
 // Function to modify employee details
-int modify_employee_details(const char *username, EmployeeDTO *newEmp) {
+int modify_employee_details(long empid, EmployeeDTO *newEmp) {
     char path[256];
     struct flock lock;
-    snprintf(path, sizeof(path), "%s%s", EMP_DIR, username);
+    memset(&lock, 0, sizeof(lock));
+    // memset(&st, 0, sizeof(st));
+
+    snprintf(path, sizeof(path), "%s%s", EMP_DIR, "employee");
 
     int fd = open(path, O_RDWR);
     if (fd == -1) {
         perror("Failed to open employee file");
         return -1;
     }
-
+    off_t offset = empid - EMPID_START;
+    
     // Lock the file for writing
-    if (mwlock_w(fd, &lock) == -1) {
+    if (awlock_w(fd, &lock, SEEK_SET, offset, sizeof(EmployeeDTO)) == -1) {
         perror("Failed to lock file");
         close(fd);
         return -1;
     }
     
     EmployeeDTO oldEmp;
-
+    lseek(fd, offset,SEEK_SET);
     int rbytes = read(fd, &oldEmp, sizeof(EmployeeDTO));
 
     if (rbytes != sizeof(EmployeeDTO)) {
@@ -225,7 +260,7 @@ int modify_employee_details(const char *username, EmployeeDTO *newEmp) {
         return -1;
     }
     strcpy(newEmp->status, oldEmp.status); //copying existing status
-    lseek(fd,0,SEEK_SET);//start of file
+    lseek(fd,-sizeof(EmployeeDTO),SEEK_CUR);//start of file
     if (write(fd, newEmp, sizeof(EmployeeDTO)) == -1) {
         perror("Failed to update employee data");
         unlock(fd, &lock);

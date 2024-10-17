@@ -30,7 +30,7 @@ int add_new_employee(EmployeeDTO *employee);
 int modify_customer_details(const char *username, CustomerDTO *newDetails) ;
 
 // Function to modify employee details
-int modify_employee_details(const char *username, EmployeeDTO *newDetails) ;
+int modify_employee_details(long , EmployeeDTO *newDetails) ;
 
 // Function to manage user roles
 int manage_user_roles(const char *username, const char *newRole) ;

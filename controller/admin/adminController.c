@@ -4,12 +4,18 @@
 #include <string.h>
 #include "../../admin/admin.h"  // Include action.h where you define all functions
 #include "../../login/login.h"
+#include "../../sessions/sessions.h"
 #include "../../utils/fileUtils.h"
+#include "../../service/employee/employeeService.h"
 
 #define ADM_DIR  "./data/users/admin/"
 #define CUST_DIR  "./data/users/customer/"
 #define EMP_DIR  "./data/users/employee/"
 #define MGR_DIR  "./data/users/manager/"
+#define MAX_FILES 1024
+
+#define ROLE_EMPLOYEE "employee"
+#define ROLE_MANAGER  "manager"
 
 void display_menu() {
     printf("\n--- Admin Panel ---\n");
@@ -20,10 +26,16 @@ void display_menu() {
     printf("5. Manage User Roles\n");
     printf("6. Change Password\n");
     printf("7. Logout\n");
+    printf("8. View Employees\n");
     printf("Select an option (1-7): ");
 }
 
-
+int is_valid_role(const char* role) {
+    if (strcmp(role, ROLE_EMPLOYEE) == 0 || strcmp(role, ROLE_MANAGER) == 0) {
+        return 1;  // Role is valid
+    }
+    return 0;  // Role is invalid
+}
 
 AdminDTO currAdmin;
 
@@ -57,13 +69,14 @@ int admin_sess(const char *username) {
             case 2: {
                 // Add new bank employee
                 memset(&employee, 0, sizeof(EmployeeDTO));
-                printf("Enter new employee username: ");
-                scanf("%s", employee.username);
+                // printf("Enter new employee username: ");
+                // scanf("%s", employee.username);
                 printf("Enter employee name: ");
                 scanf("%s", employee.name);
                 printf("Enter employee grade (A, B, C, etc.): ");
                 scanf(" %c", &employee.grade);
-                strcpy(employee.status, "active");  // Set default status to Active
+                strcpy(employee.status, "active"); // Set default status to Active 
+                strcpy(employee.role, "employee"); // Default role employee
                 add_new_employee(&employee);
                 break;
             }
@@ -98,12 +111,26 @@ int admin_sess(const char *username) {
                 // Modify employee details
                 memset(&employee, 0, sizeof(EmployeeDTO));
                 printf("Enter employee username to modify: ");
-                scanf("%s", employee.username);
+                scanf("%ld", &employee.empId);
+
+                if(employee.empId - EMPID_START < 0) {
+                    printf("Invalid Argument for Emp ID\n");
+                    break; // Invalid Argument
+                }
+                
                 printf("Enter new employee name: ");
                 scanf("%s", employee.name);
                 printf("Enter new employee grade (A, B, C, etc.): ");
                 scanf(" %c", &employee.grade);
-                if(modify_employee_details(employee.username, &employee) < 0)  {
+                printf("Enter new employee role: ");
+                scanf("%s", employee.role);
+
+                  if (!is_valid_role(employee.role)) {
+                    printf("Error: Invalid role entered. Please enter either 'employee' or 'manager'.\n");
+                    break;
+                }
+
+                if(modify_employee_details(employee.empId, &employee) < 0)  {
                     printf("EMPloyee modification failed\n");
                 }
                 break;
@@ -133,6 +160,33 @@ int admin_sess(const char *username) {
                     break;
                 }
                 return 0;
+            }
+            case 8: {
+                // Logout
+                printf("Listing all employees\n");
+                int count = 1024;
+                EmployeeDTO employees[count];
+            memset(employees, 0, sizeof(EmployeeDTO) * MAX_FILES);
+            int op = read_employee_data(employees);
+            if (op == -1) {
+                printf( "Failed to read employee data.\n");
+            }
+
+            for (int i = 0; i < op-1; i++) {
+        printf("Employee %d: Username: %ld, Name: %s, Grade: %c, Role: %s, Status: %s\n",
+               i + 1,
+               employees[i].empId,
+               employees[i].name,
+               employees[i].grade,
+               employees[i].status,
+               employees[i].role);
+    }
+
+            // Check the operation code
+            if (op == 0) {
+                printf("There are more than 1024 employees\n");
+            } 
+            break;
             }
             default: {
                 printf("Invalid option. Please try again.\n");
