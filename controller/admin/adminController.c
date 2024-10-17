@@ -167,7 +167,7 @@ int admin_sess(const char *username) {
                 int count = 1024;
                 EmployeeDTO employees[count];
             memset(employees, 0, sizeof(EmployeeDTO) * MAX_FILES);
-            int op = read_employee_data(employees);
+            int op = read_employees_data(employees);
             if (op == -1) {
                 printf( "Failed to read employee data.\n");
             }
@@ -178,8 +178,8 @@ int admin_sess(const char *username) {
                employees[i].empId,
                employees[i].name,
                employees[i].grade,
-               employees[i].status,
-               employees[i].role);
+               employees[i].role,
+               employees[i].status);
     }
 
             // Check the operation code
@@ -188,9 +188,52 @@ int admin_sess(const char *username) {
             } 
             break;
             }
-            default: {
-                printf("Invalid option. Please try again.\n");
-            }
+
+        case 9: {
+                // Logout
+                printf("enter employee Id to see details: ");
+                long empid;
+                scanf("%ld", &empid);
+                EmployeeDTO emp;
+                memset(&emp, 0, sizeof(EmployeeDTO));
+                int op = get_employee_data(empid, &emp);
+                if(op == -2) {
+                    printf("Invalid Id");
+                    break;
+                }
+                if(op == -1) {
+                    printf("error could not fetch details\n");
+                    break;
+                }
+                printf("Employee details: Username: %ld, Name: %s, Grade: %c, Role: %s, Status: %s\n",
+                        emp.empId,
+                        emp.name,
+                        emp.grade,
+                        emp.role,
+                        emp.status
+                        );
+
+                break;
+                }
+        
+        case 10: {
+                // Logout
+                printf("enter employee Id to see details: ");
+                long empid;
+                scanf("%ld", &empid);
+                int op = activate_deactivate_employee(empid);
+                if(op == -2) {
+                    printf("Invalid Id");
+                    break;
+                }
+                if(op == -1) {
+                    printf("error could not fetch details\n");
+                    break;
+                }
+                printf("Employee Status flipped\n");
+                break;
+            // Check the operation code
+            
         }
     }
 

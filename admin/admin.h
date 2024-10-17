@@ -35,4 +35,6 @@ int modify_employee_details(long , EmployeeDTO *newDetails) ;
 // Function to manage user roles
 int manage_user_roles(const char *username, const char *newRole) ;
 
+int activate_deactivate_employee(long );
+
 #endif

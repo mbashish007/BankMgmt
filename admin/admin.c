@@ -20,6 +20,8 @@
 #define EMP_DIR  "./data/users/employee/"
 #define MGR_DIR  "./data/users/manager/"
 
+#define STATUS_ACTIVE "active"
+#define STATUS_INACTIVE "inactive"
 
 int getAdmin(char* username, AdminDTO* admin) {
     char path[256];
@@ -243,14 +245,14 @@ int modify_employee_details(long empid, EmployeeDTO *newEmp) {
     off_t offset = empid - EMPID_START;
     
     // Lock the file for writing
-    if (awlock_w(fd, &lock, SEEK_SET, offset, sizeof(EmployeeDTO)) == -1) {
+    if (awlock_w(fd, &lock, SEEK_SET, offset*sizeof(EmployeeDTO), sizeof(EmployeeDTO)) == -1) {
         perror("Failed to lock file");
         close(fd);
         return -1;
     }
     
     EmployeeDTO oldEmp;
-    lseek(fd, offset,SEEK_SET);
+    lseek(fd, offset*sizeof(EmployeeDTO),SEEK_SET);
     int rbytes = read(fd, &oldEmp, sizeof(EmployeeDTO));
 
     if (rbytes != sizeof(EmployeeDTO)) {
@@ -267,7 +269,63 @@ int modify_employee_details(long empid, EmployeeDTO *newEmp) {
         close(fd);
         return -1;
     }
+    sleep(10);
+    // Unlock and close file
+    unlock(fd, &lock);
+    close(fd);
+    return 0;
+}
 
+// Function to modify employee details
+int activate_deactivate_employee(long empid) {
+    char path[256];
+    struct flock lock;
+    memset(&lock, 0, sizeof(lock));
+    // memset(&st, 0, sizeof(st));
+
+    snprintf(path, sizeof(path), "%s%s", EMP_DIR, "employee");
+
+    int fd = open(path, O_RDWR);
+    if (fd == -1) {
+        perror("Failed to open employee file");
+        return -1;
+    }
+    off_t offset = empid - EMPID_START;
+    
+    // Lock the file for writing
+    if (awlock_w(fd, &lock, SEEK_SET, offset*sizeof(EmployeeDTO), sizeof(EmployeeDTO)) == -1) {
+        perror("Failed to lock file");
+        close(fd);
+        return -1;
+    }
+    
+    EmployeeDTO oldEmp;
+    lseek(fd, offset*sizeof(EmployeeDTO),SEEK_SET);
+    int rbytes = read(fd, &oldEmp, sizeof(EmployeeDTO));
+
+    if (rbytes != sizeof(EmployeeDTO)) {
+        perror("Error reading Employee data");
+        unlock(fd, &lock);
+        close(fd);
+        return -1;
+    }
+    if (strcmp(oldEmp.status, STATUS_ACTIVE) == 0) {
+        // If status is "active", set to "inactive"
+        strncpy(oldEmp.status, STATUS_INACTIVE, sizeof(STATUS_INACTIVE) - 1);
+        oldEmp.status[sizeof(oldEmp.status) - 1] = '\0';
+    } else if (strcmp(oldEmp.status, STATUS_INACTIVE) == 0) {
+        // If status is "inactive", set to "active"
+        strncpy(oldEmp.status, STATUS_ACTIVE, sizeof(STATUS_ACTIVE) - 1);
+        oldEmp.status[sizeof(oldEmp.status) - 1] = '\0';
+    }
+    lseek(fd,-sizeof(EmployeeDTO),SEEK_CUR);//start of file
+    if (write(fd, &oldEmp, sizeof(EmployeeDTO)) == -1) {
+        perror("Failed to update employee data");
+        unlock(fd, &lock);
+        close(fd);
+        return -1;
+    }
+    sleep(5);
     // Unlock and close file
     unlock(fd, &lock);
     close(fd);
