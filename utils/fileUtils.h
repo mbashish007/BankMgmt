@@ -8,6 +8,10 @@
  */
 int mwlock_w(int fd, struct flock *lock); 
 
+int awlock_w(int fd, struct flock *lock, short int l_whence, off_t start, off_t len) ;
+
+int arlock_w(int fd, struct flock *lock, short int l_whence, off_t start, off_t len) ;
+
 /**
  * Mandatory File Read Lock 
  */
