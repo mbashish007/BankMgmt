@@ -6,7 +6,7 @@
 #include <errno.h>
 #include <time.h>
 #include <stdio.h> 
-#include "../utils/fileUtils.h" // For perror
+#include "../utils/file/fileUtils.h" // For perror
 #include "../login/login.h"
 #include "../Structs/sessionIdentifier.h"
 
