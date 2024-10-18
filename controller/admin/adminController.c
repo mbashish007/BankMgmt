@@ -5,8 +5,9 @@
 #include "../../admin/admin.h"  // Include action.h where you define all functions
 #include "../../login/login.h"
 #include "../../sessions/sessions.h"
-#include "../../utils/fileUtils.h"
+#include "../../utils/file/fileUtils.h"
 #include "../../service/employee/employeeService.h"
+#include "../../service/customer/customerService.h"
 
 #define ADM_DIR  "./data/users/admin/"
 #define CUST_DIR  "./data/users/customer/"
@@ -84,22 +85,22 @@ int admin_sess(const char *username) {
                 // Modify customer details
                 memset(&customer, 0, sizeof(CustomerDTO));
                 char unamebuff[MAX_USERNAME_LEN];
-                char namebuff[MAX_Name_LEN];
+                char namebuff[MAX_NAME_LEN];
                 char phonebuff[MAX_PHONE_LEN];
                 
                 printf("Enter customer username to modify: ");
-                scanf("%s", unamebuff);
-                strncpy(customer.username, unamebuff, MAX_USERNAME_LEN);
+                scanf("%ld", &customer.userId);
+                // strncpy(customer.username, unamebuff, MAX_USERNAME_LEN);
             
                 printf("Enter new customer name: ");
                 scanf("%s", namebuff);
-                strncpy(customer.name, namebuff, MAX_Name_LEN);
+                strncpy(customer.name, namebuff, MAX_NAME_LEN);
 
                 printf("Enter new customer phone number: ");
                 scanf("%s", phonebuff);
                 strncpy(customer.phone, phonebuff, MAX_PHONE_LEN);//null terminate manually when doing socket programming
              
-                if(modify_customer_details(customer.username,&customer) < 0) {
+                if(modify_customer_details(customer.userId,&customer) < 0) {
                     printf("Customer Modification failed");
                 }else {
                     printf("Customer Modified Successfully\n");
@@ -180,7 +181,7 @@ int admin_sess(const char *username) {
                employees[i].grade,
                employees[i].role,
                employees[i].status);
-    }
+            }
 
             // Check the operation code
             if (op == 0) {
@@ -231,11 +232,13 @@ int admin_sess(const char *username) {
                     break;
                 }
                 printf("Employee Status flipped\n");
-                break;
+                
             // Check the operation code
             
-        }
+             }
     }
 
+    
+    }
     return 0;
 }
