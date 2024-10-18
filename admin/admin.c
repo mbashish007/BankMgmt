@@ -10,7 +10,7 @@
 #include "../Structs/adminDTO.h"
 #include "../Structs/employeeDTO.h"
 #include "../Structs/customerDTO.h"
-#include "../utils/fileUtils.h"
+#include "../utils/file/fileUtils.h"
 #include "../login/login.h"
 #include <limits.h> //for PATH_MAX
 
@@ -139,7 +139,7 @@ int add_new_employee(EmployeeDTO *employee) {
     }
 
     // Lock the file for writing
-    if (awlock_w(fd, &lock, SEEK_END, 0, sizeof(EmployeeDTO)) == -1) {
+    if (awlock_w(fd, &lock, SEEK_END, 0, 0) == -1) {
         perror("Failed to lock file");
         close(fd);
         return -1;
@@ -162,13 +162,15 @@ int add_new_employee(EmployeeDTO *employee) {
         return -1;
     }
     char empid_char[MAX_USERNAME_LEN];
-    snprintf(empid_char, MAX_USERNAME_LEN, "%d", employee->empId);
+    snprintf(empid_char, MAX_USERNAME_LEN, "%ld", employee->empId);
     if(add_user(empid_char, empid_char)==-1){
-        unlock(fd, &lock);
-        close(fd);
-        if(unlink(path)==0) {
-            perror("Unlink Failed");
-        }
+        // unlock(fd, &lock);
+        // close(fd);
+       ftruncate(fd, file_size);// delete last addition
+
+        // if(unlink(path)==0) {
+        //     perror("Unlink Failed");
+        // }
         return -1;
     }
     // Unlock and close file
@@ -177,56 +179,6 @@ int add_new_employee(EmployeeDTO *employee) {
     return 0;
 }
 
-// Function to modify customer details
-/**
- * returns
- * -1 error
- * 0 success
- */
-int modify_customer_details(const char *username, CustomerDTO *newCust) {
-    char path[256];
-    struct flock lock;
-    snprintf(path, sizeof(path), "%s%s", CUST_DIR, username);
-
-    int fd = open(path, O_RDWR);
-    if (fd == -1) {
-        perror("Failed to open customer file");
-        return -1;
-    }
-
-    // Lock the file for writing
-    if (mwlock_w(fd, &lock) == -1) {
-        perror("Failed to lock file");
-        close(fd);
-        return -1;
-    }
-
-    CustomerDTO oldCust;
-
-    int rbytes = read(fd, &oldCust, sizeof(CustomerDTO));
-
-    if (rbytes != sizeof(CustomerDTO)) {
-        perror("Error reading Employee data");
-        unlock(fd, &lock);
-        close(fd);
-        return -1;
-    }
-    strcpy(newCust->status, oldCust.status); //copying existing status
-    newCust->balance = oldCust.balance;
-    lseek(fd,0,SEEK_SET);//start of file
-
-    if (write(fd, newCust, sizeof(CustomerDTO)) == -1) {
-        perror("Failed to update customer data");
-        unlock(fd, &lock);
-        close(fd);
-        return -1;
-    }
-
-    // Unlock and close file
-    unlock(fd, &lock);
-    close(fd);
-    return 0;
-}
 
 // Function to modify employee details
 int modify_employee_details(long empid, EmployeeDTO *newEmp) {
@@ -312,11 +264,11 @@ int activate_deactivate_employee(long empid) {
     if (strcmp(oldEmp.status, STATUS_ACTIVE) == 0) {
         // If status is "active", set to "inactive"
         strncpy(oldEmp.status, STATUS_INACTIVE, sizeof(STATUS_INACTIVE) - 1);
-        oldEmp.status[sizeof(oldEmp.status) - 1] = '\0';
+        oldEmp.status[sizeof(STATUS_INACTIVE) - 1] = '\0';
     } else if (strcmp(oldEmp.status, STATUS_INACTIVE) == 0) {
         // If status is "inactive", set to "active"
         strncpy(oldEmp.status, STATUS_ACTIVE, sizeof(STATUS_ACTIVE) - 1);
-        oldEmp.status[sizeof(oldEmp.status) - 1] = '\0';
+        oldEmp.status[sizeof(STATUS_ACTIVE) - 1] = '\0';
     }
     lseek(fd,-sizeof(EmployeeDTO),SEEK_CUR);//start of file
     if (write(fd, &oldEmp, sizeof(EmployeeDTO)) == -1) {

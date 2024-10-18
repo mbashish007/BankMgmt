@@ -27,7 +27,7 @@ int add_new_employee(EmployeeDTO *employee);
  * -1 error
  * 0 success
  */
-int modify_customer_details(const char *username, CustomerDTO *newDetails) ;
+// int modify_customer_details(const char *username, CustomerDTO *newDetails) ;
 
 // Function to modify employee details
 int modify_employee_details(long , EmployeeDTO *newDetails) ;
