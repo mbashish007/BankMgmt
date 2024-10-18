@@ -38,9 +38,7 @@ void addCustomer(int sd)
     read(sd, customer.phone, MAX_PHONE_LEN); // Read customer phone from the socket
 
     // Ask for customer status
-    msg = "Enter customer status (active/inactive): ";
-    write(STDOUT_FILENO, msg, strlen(msg));    // Send the message to the socket
-    read(sd, customer.status, MAX_STATUS_LEN); // Read customer status from the socket
+    strncpy(customer.status, "active", sizeof("active")); // Read customer status from the socket
 
     customer.balance = 0; // Convert balance to an integer
 
