@@ -6,8 +6,11 @@
 #include "../../login/login.h"
 #include "../../sessions/sessions.h"
 #include "../../utils/file/fileUtils.h"
+#include "../../utils/transaction/transaction.h"
 #include "../../service/employee/employeeService.h"
 #include "../../service/customer/customerService.h"
+
+#include "../../Structs/txnDTO.h"
 
 #define ADM_DIR "./data/users/admin/"
 #define CUST_DIR "./data/users/customer/"
@@ -142,7 +145,7 @@ void viewCustomer(int sd)
 void viewAllCustomers(int sd)
 {
     const char *msg = "Listing All Customers\n";
-    write(STDOUT_FILENO, msg, sizeof(msg));
+    write(STDOUT_FILENO, msg, strlen(msg));
     char wbuffer[BUFFER_SIZE];
     int count = 1024;
     CustomerDTO customers[count];
@@ -151,7 +154,7 @@ void viewAllCustomers(int sd)
     if (op == -1)
     {
         msg = "Failed to read customer data.\n";
-        write(STDOUT_FILENO, msg, sizeof(msg));
+        write(STDOUT_FILENO, msg, strlen(msg));
     }
 
     for (int i = 0; i < op - 1; i++)
@@ -176,7 +179,7 @@ void viewAllCustomers(int sd)
     if (op == 0)
     {
         msg = "There are more than 1024 customers\n";
-        write(STDOUT_FILENO, msg, sizeof(msg));
+        write(STDOUT_FILENO, msg, strlen(msg));
     }
     // Implementation logic for viewing assigned loan applications
 }
@@ -199,13 +202,69 @@ void view_assigned_loan_applications()
     // Implementation logic for viewing assigned loan applications
 }
 
+void emp_view_customer_txns(int sd, long empId) {
+
+        const char* msg;
+        char input[BUFFER_SIZE];
+        char wbuffer[BUFFER_SIZE];
+      
+        int count = 1024;
+        TxnDTO txns[count];
+        memset(txns, 0, sizeof(TxnDTO) * MAX_FILES);
+
+        msg = "Enter Customer Id: ";
+        write(STDOUT_FILENO, msg, strlen(msg));
+        ssize_t bytesRead = read(sd, input, BUFFER_SIZE);
+        if (bytesRead > 0) {
+            input[bytesRead - 1] = '\0';  // Remove newline
+        }
+        long customerId = atol(input);
+          snprintf(wbuffer, sizeof(wbuffer), "Listing Last %d Transactions of Customer: %ld\n", MAX_FILES, customerId);
+           write(STDOUT_FILENO, wbuffer, strlen(wbuffer));
+        int op = read_txns_for_cust(txns, customerId);
+        if (op == -1)
+        {
+            msg = "Failed to read transactions data.\n";
+            write(STDOUT_FILENO, msg, strlen(msg));
+        }
+
+        char tsString[26];
+
+
+        for (int i = 0; i < op - 1; i++)
+        {
+            ctime_r(&txns[i].timestamp, tsString);
+
+            int n = snprintf(wbuffer, sizeof(wbuffer),
+                            "Txn %d: TxnId: %ld, from Id: %ld, to Id: %ld, Amount: %d, timestamp: %s\n",
+                            i + 1,
+                            txns[i].txnId,
+                            txns[i].fromCust,
+                            txns[i].toCust,
+                            txns[i].amount,
+                            tsString);
+
+       
+            if (n > 0)
+            {
+                write(sd, wbuffer, n);
+            }
+        }
+        // Check the operation code
+        if (op == 0)
+        {
+            msg = "There are more than 1024 txns\n";
+            write(STDOUT_FILENO, msg, strlen(msg));
+        }
+}
+
 int employee_session(int sd, long empId)
 {
     char option[BUFFER_SIZE];
     const char *msg = "Hello";
     if(get_employee_data(empId, &currEmployee)<0) {
         msg = "could not open employee";
-        write(STDOUT_FILENO, msg, sizeof(msg));
+        write(STDOUT_FILENO, msg, strlen(msg));
         char empid_char[MAX_USERNAME_LEN];
         snprintf(empid_char, MAX_USERNAME_LEN, "%ld", empId);
         logout(empid_char);
@@ -244,6 +303,7 @@ int employee_session(int sd, long empId)
             modify_customer(sd);
             break;
         case 5:
+            emp_view_customer_txns(sd, empId);
             process_loan_applications();
             break;
         case 6:
@@ -253,7 +313,11 @@ int employee_session(int sd, long empId)
             view_assigned_loan_applications();
             break;
         case 8:
-            printf("Exiting...\n");
+            const char* msg = "Logging Out ...\n";
+            write(STDOUT_FILENO, msg, strlen(msg));
+             char empId_char[MAX_USERNAME_LEN];
+            snprintf(empId_char, MAX_USERNAME_LEN, "%ld", empId);
+            logout(empId_char);
             return 0;
         default:
             printf("Invalid option, please try again.\n");
