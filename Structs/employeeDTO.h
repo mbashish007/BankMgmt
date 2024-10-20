@@ -7,6 +7,12 @@
 #define MAX_ROLE_LEN 9
 #define EMPID_START 300000
 
+#define EMP_STATUS_INACTIVE "inactive"
+#define EMP_STATUS_ACTIVE "active"
+
+#define EMP_ROLE_EMP "employee"
+#define EMP_ROLE_MGR "manager"
+
 typedef struct {
     long empId;    
     char name[MAX_NAME_LEN] ;

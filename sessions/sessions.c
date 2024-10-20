@@ -13,7 +13,11 @@
 #define SESSION_DIR "./data/sessions/"
 #define BUFFER_SIZE 256
 
-
+/**
+ * success fd
+ * -2 session already exists
+ * error -1
+ */
 // Function to create a session file for the user
 int create__new_session(const char *username, int clientSocket, pid_t pid) {
     struct flock lock;
@@ -29,12 +33,12 @@ int create__new_session(const char *username, int clientSocket, pid_t pid) {
     int fd = open(session_file, O_RDWR | O_CREAT | O_EXCL, 0600);
     if (fd < 0) {
         if (errno == EEXIST) {
-            write(STDOUT_FILENO, "User is already logged in.\n", 27);
-        } else {
-            printf("file name:  %s \n", session_file);
+          close(fd);
+          return -2;
+        } 
 
             perror("Error creating session file");
-        }
+        
         return -1;
     }
 
@@ -56,11 +60,14 @@ int create__new_session(const char *username, int clientSocket, pid_t pid) {
         return -1;
     }
     unlock(fd, &lock);
-    write(STDOUT_FILENO, "Session created.\n", 17);
     return fd;  // Return file descriptor of the session
 }
 
 // Function to remove the session file 
+/**
+ * 0 success
+ * 1 error
+ */
 int logout(const char *username) {
     char session_file[BUFFER_SIZE];
     struct flock lock;
@@ -87,17 +94,16 @@ int logout(const char *username) {
     }
 
     // Display the session details
-    printf("Logging out user %s:\n", username);
-    printf("Client Socket: %d\n", session.client_socket);
-    printf("Process ID: %d\n", session.pid);
-    printf("Login Time: %ld\n", session.loginTime);
+    // printf("Logging out user %s:\n", username);
+    // printf("Client Socket: %d\n", session.client_socket);
+    // printf("Process ID: %d\n", session.pid);
+    // printf("Login Time: %ld\n", session.loginTime);
 
     //unlock and close session file
     unlock(fd, &lock);
     close(fd);
     // Remove the session file
     if (unlink(session_file) == 0) {
-        printf( "User logged out.\n");
         return 0;
     } else {
         perror("Error removing session file");

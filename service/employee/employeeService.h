@@ -20,4 +20,26 @@ int read_employees_data(EmployeeDTO *);
  */
 int get_employee_data(long , EmployeeDTO *); 
 
+/**
+ * 0 success
+ * -1 error
+ * -2 invalid argument for id
+ */
+int approveLoan( long );
+
+/**
+ * 0 success
+ * -1 error
+ * -2 invalid argument for id
+ */
+int rejectLoan( long loanId) ;
+
+/**
+ * 
+ * 0 success
+ * -1 error
+ * -2 invalid empId
+ * -3 invalid loanId
+ */
+int assignLoan( long empId, long loanId) ;
 #endif

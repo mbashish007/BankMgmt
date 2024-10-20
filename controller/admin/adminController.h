@@ -3,6 +3,6 @@
 
 #include "../../Structs/adminDTO.h"
 
-int admin_sess(const char *);
+int admin_sess(int, const char *);
 
 #endif

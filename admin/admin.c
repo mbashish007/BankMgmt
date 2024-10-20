@@ -26,8 +26,17 @@
 int getAdmin(char* username, AdminDTO* admin) {
     char path[256];
     struct flock lock;
-    snprintf(path, sizeof(path), "%s%s", ADM_DIR,username);
+    snprintf(path, sizeof(path), "%s%s", ADM_DIR, username);
+    // write(sd, path, strlen(path));
 
+    // char cwd[PATH_MAX];  // PATH_MAX ensures the array is large enough to hold the directory path
+    // char tbuf[4096];
+    // if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    //     snprintf(tbuf, 4096, "Current working directory: %s\n", cwd);
+    //     write(sd, tbuf, 4096);
+    // } else {
+    //     perror("getcwd() error");
+    // }
     int fd = open(path, O_RDONLY);
     if(fd<0) {
         perror("admin not exist\n");

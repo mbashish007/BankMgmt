@@ -7,7 +7,8 @@
 #define MAX_PHONE_LEN 11
 
 #define CUSTID_START 100000
-
+#define CUST_STATUS_INACTIVE "inactive"
+#define CUST_STATUS_ACTIVE "active"
 
 typedef struct {
     long userId;    
